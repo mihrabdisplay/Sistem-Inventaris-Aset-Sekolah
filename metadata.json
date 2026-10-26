@@ -1,0 +1,9 @@
+{
+  "name": "SIMAS - Sistem Inventaris Aset Sekolah",
+  "description": "Aplikasi pendataan dan manajemen aset sekolah dengan pemindai QR code, pemantauan kondisi, penanggung jawab ruangan, dan ekspor laporan otomatis.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

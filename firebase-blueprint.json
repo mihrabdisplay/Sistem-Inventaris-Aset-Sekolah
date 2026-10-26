@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "Asset": {
+      "title": "Asset",
+      "description": "Informasi barang inventaris atau sarana prasarana sekolah",
+      "type": "object",
+      "properties": {
+        "assetCode": {
+          "type": "string",
+          "description": "Kode unik registrasi inventaris aset",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Nama barang aset sekolah",
+          "maxLength": 150
+        },
+        "category": {
+          "type": "string",
+          "description": "Kategori inventaris",
+          "enum": [
+            "Elektronik",
+            "Furnitur",
+            "Peralatan Lab",
+            "Buku & Media",
+            "Sarana Olahraga",
+            "Kendaraan/Mesin",
+            "Lainnya"
+          ]
+        },
+        "location": {
+          "type": "string",
+          "description": "Lokasi atau ruangan penyimpanan aset",
+          "maxLength": 100
+        },
+        "condition": {
+          "type": "string",
+          "description": "Kondisi fisik aset",
+          "enum": [
+            "Baik",
+            "Rusak Ringan",
+            "Rusak Berat",
+            "Dalam Perbaikan",
+            "Dihapuskan"
+          ]
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Jumlah kuantitas unit"
+        },
+        "purchaseYear": {
+          "type": "number",
+          "description": "Tahun pengadaan/pembelian"
+        },
+        "sourceOfFunds": {
+          "type": "string",
+          "description": "Sumber dana anggaran",
+          "maxLength": 60
+        },
+        "price": {
+          "type": "number",
+          "description": "Nilai perolehan atau harga perolehan dalam Rupiah"
+        },
+        "personInCharge": {
+          "type": "string",
+          "description": "Nama penanggung jawab aset atau ruangan",
+          "maxLength": 100
+        },
+        "notes": {
+          "type": "string",
+          "description": "Keterangan tambahan spesifikasi atau nomor seri",
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "description": "Status ketersediaan aset",
+          "enum": [
+            "Tersedia",
+            "Dipinjam",
+            "Dalam Perbaikan",
+            "Dihapuskan"
+          ]
+        },
+        "lastAuditAt": {
+          "type": "string",
+          "description": "Waktu terakhir dipindai audit QR",
+          "maxLength": 50
+        },
+        "lastAuditBy": {
+          "type": "string",
+          "description": "Nama staf/petugas pemeriksa terakhir",
+          "maxLength": 100
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "User ID pembuat dokumen",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Waktu pembuatan data"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Waktu pembaruan data terakhir"
+        }
+      },
+      "required": [
+        "assetCode",
+        "name",
+        "category",
+        "location",
+        "condition",
+        "quantity",
+        "status"
+      ]
+    },
+    "Location": {
+      "title": "Location",
+      "description": "Data master ruangan dan gedung sekolah",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nama ruangan",
+          "maxLength": 100
+        },
+        "building": {
+          "type": "string",
+          "description": "Gedung dan lantai",
+          "maxLength": 100
+        },
+        "picName": {
+          "type": "string",
+          "description": "Penanggung jawab ruangan",
+          "maxLength": 100
+        },
+        "picContact": {
+          "type": "string",
+          "description": "Kontak penanggung jawab ruangan",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Waktu pembuatan master ruangan"
+        }
+      },
+      "required": [
+        "name",
+        "building",
+        "picName"
+      ]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Catatan log riwayat pemindaian QR code dan audit fisik aset",
+      "type": "object",
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "description": "ID referensi dokumen aset",
+          "maxLength": 128
+        },
+        "assetCode": {
+          "type": "string",
+          "description": "Kode aset",
+          "maxLength": 64
+        },
+        "assetName": {
+          "type": "string",
+          "description": "Nama aset",
+          "maxLength": 150
+        },
+        "action": {
+          "type": "string",
+          "description": "Jenis aksi audit",
+          "maxLength": 50
+        },
+        "previousCondition": {
+          "type": "string",
+          "description": "Kondisi sebelumnya",
+          "maxLength": 50
+        },
+        "newCondition": {
+          "type": "string",
+          "description": "Kondisi hasil audit",
+          "maxLength": 50
+        },
+        "location": {
+          "type": "string",
+          "description": "Lokasi saat diaudit",
+          "maxLength": 100
+        },
+        "scannedBy": {
+          "type": "string",
+          "description": "Nama atau email pemeriksa yang memindai QR",
+          "maxLength": 100
+        },
+        "scannedById": {
+          "type": "string",
+          "description": "UID petugas pemeriksa",
+          "maxLength": 128
+        },
+        "notes": {
+          "type": "string",
+          "description": "Catatan hasil pemindaian atau temuan",
+          "maxLength": 500
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Waktu pemindaian audit"
+        }
+      },
+      "required": [
+        "assetId",
+        "assetCode",
+        "assetName",
+        "action",
+        "scannedBy"
+      ]
+    }
+  },
+  "firestore": {
+    "/assets/{assetId}": {
+      "schema": "Asset",
+      "description": "Daftar inventaris aset dan sarana prasarana sekolah"
+    },
+    "/locations/{locationId}": {
+      "schema": "Location",
+      "description": "Master data ruangan dan penanggung jawab gedung sekolah"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Riwayat pemindaian QR code dan perubahan kondisi barang"
+    }
+  }
+}

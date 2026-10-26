@@ -1,0 +1,164 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Deny All fallback
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mihrabdisplay@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidCategory(cat) {
+      return cat in [
+        'Elektronik',
+        'Furnitur',
+        'Peralatan Lab',
+        'Buku & Media',
+        'Sarana Olahraga',
+        'Kendaraan/Mesin',
+        'Lainnya'
+      ];
+    }
+
+    function isValidCondition(cond) {
+      return cond in [
+        'Baik',
+        'Rusak Ringan',
+        'Rusak Berat',
+        'Dalam Perbaikan',
+        'Dihapuskan'
+      ];
+    }
+
+    function isValidStatus(st) {
+      return st in [
+        'Tersedia',
+        'Dipinjam',
+        'Dalam Perbaikan',
+        'Dihapuskan'
+      ];
+    }
+
+    function isValidAsset(data) {
+      return data.keys().hasAll(['assetCode', 'name', 'category', 'location', 'condition', 'quantity', 'status'])
+        && data.keys().hasOnly([
+          'assetCode', 'name', 'category', 'location', 'condition', 'quantity',
+          'purchaseYear', 'sourceOfFunds', 'price', 'personInCharge', 'notes',
+          'status', 'lastAuditAt', 'lastAuditBy', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.assetCode is string && data.assetCode.size() > 0 && data.assetCode.size() <= 64
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && isValidCategory(data.category)
+        && data.location is string && data.location.size() > 0 && data.location.size() <= 100
+        && isValidCondition(data.condition)
+        && data.quantity is number && data.quantity >= 0
+        && isValidStatus(data.status)
+        && (!('purchaseYear' in data) || (data.purchaseYear is number && data.purchaseYear >= 1950 && data.purchaseYear <= 2100))
+        && (!('sourceOfFunds' in data) || (data.sourceOfFunds is string && data.sourceOfFunds.size() <= 60))
+        && (!('price' in data) || (data.price is number && data.price >= 0))
+        && (!('personInCharge' in data) || (data.personInCharge is string && data.personInCharge.size() <= 100))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && (!('lastAuditAt' in data) || (data.lastAuditAt is string && data.lastAuditAt.size() <= 50))
+        && (!('lastAuditBy' in data) || (data.lastAuditBy is string && data.lastAuditBy.size() <= 100))
+        && (!('createdBy' in data) || (data.createdBy is string && data.createdBy.size() <= 128));
+    }
+
+    function isValidLocation(data) {
+      return data.keys().hasAll(['name', 'building', 'picName'])
+        && data.keys().hasOnly(['name', 'building', 'picName', 'picContact', 'createdAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.building is string && data.building.size() > 0 && data.building.size() <= 100
+        && data.picName is string && data.picName.size() > 0 && data.picName.size() <= 100
+        && (!('picContact' in data) || (data.picContact is string && data.picContact.size() <= 50));
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['assetId', 'assetCode', 'assetName', 'action', 'scannedBy'])
+        && data.keys().hasOnly([
+          'assetId', 'assetCode', 'assetName', 'action', 'previousCondition',
+          'newCondition', 'location', 'scannedBy', 'scannedById', 'notes', 'timestamp'
+        ])
+        && data.assetId is string && data.assetId.size() > 0 && data.assetId.size() <= 128
+        && data.assetCode is string && data.assetCode.size() > 0 && data.assetCode.size() <= 64
+        && data.assetName is string && data.assetName.size() > 0 && data.assetName.size() <= 150
+        && data.action is string && data.action.size() > 0 && data.action.size() <= 50
+        && data.scannedBy is string && data.scannedBy.size() > 0 && data.scannedBy.size() <= 100
+        && (!('previousCondition' in data) || (data.previousCondition is string && data.previousCondition.size() <= 50))
+        && (!('newCondition' in data) || (data.newCondition is string && data.newCondition.size() <= 50))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 100))
+        && (!('scannedById' in data) || (data.scannedById is string && data.scannedById.size() <= 128))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500))
+        && (!('timestamp' in data) || (data.timestamp is string && data.timestamp.size() <= 50));
+    }
+
+    // Assets Collection
+    match /assets/{assetId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidId(assetId)
+        && isValidAsset(incoming())
+        && (isAdmin() || !('createdBy' in incoming()) || incoming().createdBy == request.auth.uid);
+      allow update: if isSignedIn()
+        && isValidId(assetId)
+        && isValidAsset(incoming())
+        && (
+          isAdmin() ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'assetCode', 'name', 'category', 'location', 'condition', 'quantity',
+            'purchaseYear', 'sourceOfFunds', 'price', 'personInCharge', 'notes',
+            'status', 'lastAuditAt', 'lastAuditBy', 'updatedAt'
+          ])
+        );
+      allow delete: if isAdmin();
+    }
+
+    // Locations Collection
+    match /locations/{locationId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(locationId) && isValidLocation(incoming());
+      allow update: if isSignedIn() && isValidId(locationId) && isValidLocation(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Audit Logs Collection (Immutable record)
+    match /auditLogs/{logId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidId(logId)
+        && isValidAuditLog(incoming())
+        && (isAdmin() || !('scannedById' in incoming()) || incoming().scannedById == request.auth.uid);
+      allow update: if false; // Logs are immutable!
+      allow delete: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn();
+      allow list, write: if isAdmin();
+    }
+  }
+}
